@@ -8,6 +8,18 @@ The firmware for the Original Prusa i3 printers is proudly based on [Marlin 1.0.
 
 This repository contains _development material only!_
 
+# Custom Features
+
+#### Custom Nozzle Diameter
+`Set nozzle sizes that aren't officially supported, stop getting the warning "Nozzle diameter does not match g-code"`
+
+Choose any nozzle diameter from 0.1mm to 1mm, in 50uM(0.05mm) steps.
+
+In the "Settings/HW Setup" menu, the "Nozzle D." setting has been modified to function as a sub-menu, that uses the encoder to change the diameter.
+
+The step size, min diameter and max diameter can be changed by editing values in Configuration_Custom.h. 
+
+`If you wish to keep the functionality similar to the official firmware (ie. Each press of the encoder's switch increments the diameter), you can change "NOZZLE_D_MODE" to "NOZZLE_D_MODE_CYCLE" inside of  Configuration_Custom.h`
 
 # Build
 ## Linux

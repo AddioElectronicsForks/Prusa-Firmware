@@ -41,6 +41,17 @@ enum class ClNozzleDiameter:uint_least8_t
     _Diameter_Undef=EEPROM_EMPTY_VALUE
 };
 
+//enum class ClNozzleCustomDiameter :uint_least8_t
+//{
+//    _Diameter_250 = 25,
+//    _Diameter_300 = 30,
+//    _Diameter_400 = 40,
+//    _Diameter_500 = 50,
+//    _Diameter_600 = 60,
+//    _Diameter_800 = 80,
+//    _Diameter_Undef = EEPROM_EMPTY_VALUE
+//};
+
 enum class ClCheckMode:uint_least8_t
 {
     _None,
@@ -81,7 +92,8 @@ enum class ClCompareValue:uint_least8_t
     _Greater=2
 };
 
-extern ClNozzleDiameter oNozzleDiameter;
+//extern ClNozzleDiameter oNozzleDiameter;
+extern uint8_t oNozzleDiameter;
 extern ClCheckMode oCheckMode;
 extern ClCheckModel oCheckModel;
 extern ClCheckVersion oCheckVersion;

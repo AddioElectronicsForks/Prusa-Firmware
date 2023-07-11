@@ -1,7 +1,7 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-
+#include "Configuration_Custom.h"
 #include "Configuration_var.h"
 #include "pins.h"
 
