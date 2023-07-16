@@ -26,7 +26,6 @@
 #include "planner.h"
 #include "temperature.h"
 #include "ultralcd.h"
-#include "language.h"
 #include "cardreader.h"
 #include "speed_lookuptable.h"
 #if defined(DIGIPOTSS_PIN) && DIGIPOTSS_PIN > -1
@@ -37,10 +36,7 @@
 #endif //TMC2130
 
 #include "Filament_sensor.h"
-
-#include "mmu2.h"
 #include "ConfigurationStore.h"
-
 #include "Prusa_farm.h"
 
 #ifdef DEBUG_STACK_MONITOR
@@ -867,7 +863,7 @@ FORCE_INLINE void isr() {
             step_rate = acc_step_rate - step_rate; // Decelerate from acceleration end point.
 
             // lower limit
-            if (step_rate < current_block->final_rate)
+            if (step_rate < uint16_t(current_block->final_rate))
                 step_rate = uint16_t(current_block->final_rate);
         }
 
@@ -1313,18 +1309,15 @@ void st_synchronize()
 	}
 }
 
-void st_set_position(const long &x, const long &y, const long &z, const long &e)
+void st_set_position(const long *pos)
 {
   CRITICAL_SECTION_START;
   // Copy 4x4B.
-  // This block locks the interrupts globally for 4.56 us,
-  // which corresponds to a maximum repeat frequency of 219.18 kHz.
+  // This block locks the interrupts globally for 2.06 us,
+  // which corresponds to a maximum repeat frequency of ~484kHz.
   // This blocking is safe in the context of a 10kHz stepper driver interrupt
   // or a 115200 Bd serial line receive interrupt, which will not trigger faster than 12kHz.
-  count_position[X_AXIS] = x;
-  count_position[Y_AXIS] = y;
-  count_position[Z_AXIS] = z;
-  count_position[E_AXIS] = e;
+  memcpy((long *)count_position, pos, sizeof(count_position));
   CRITICAL_SECTION_END;
 }
 

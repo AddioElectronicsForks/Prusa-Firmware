@@ -903,7 +903,7 @@ void update_sec_lang_from_external_flash()
 		uint32_t src_addr;
 		if (lang_get_header(lang, &header, &src_addr))
 		{
-			lcd_puts_at_P(1,3,PSTR("Language update."));
+			lcd_puts_at_P(1,0,PSTR("Language update"));
 			for (uint8_t i = 0; i < state; i++) fputc('.', lcdout);
 			_delay(100);
 			boot_reserved = (boot_reserved & 0xF8) | ((state + 1) & 0x07);
@@ -3903,6 +3903,7 @@ extern uint8_t st_backlash_y;
 //!@n M114 - Output current position to serial port
 //!@n M115 - Capabilities string
 //!@n M117 - display message
+//!@n M118 - Serial print
 //!@n M119 - Output Endstop status to serial port
 //!@n M123 - Tachometer value
 //!@n M126 - Solenoid Air Valve Open (BariCUDA support by jmil)
@@ -6456,6 +6457,39 @@ Sigma_Exit:
         const char *src = strchr_pointer + 4; // "M117"
         lcd_setstatus(*src == ' '? src + 1: src);
         custom_message_type = CustomMsg::M117;
+    }
+    break;
+
+    /*!
+    ### M118 - Serial print <a href="https://reprap.org/wiki/G-code#M118:_Echo_message_on_host">M118: Serial print</a>
+    #### Usage
+
+        M118 [ A1 | E1 ] [ String ]
+
+    #### Parameters
+    - `A1` - Prepend // to denote a comment or action command. Hosts like OctoPrint can interpret such commands to perform special actions. See your host’s documentation.
+    - `E1` - Prepend echo: to the message. Some hosts will display echo messages differently when preceded by echo:.
+    - `String` - Message string. If omitted, a blank line will be sent.
+    */
+    case 118: {
+        bool hasE = false, hasA = false;
+        char *p = strchr_pointer + 5;
+        
+        for (uint8_t i = 2; i--;) {
+          // A1, E1, and Pn are always parsed out
+          if (!((p[0] == 'A' || p[0] == 'E') && p[1] == '1')) break;
+          switch (p[0]) {
+            case 'A': hasA = true; break;
+            case 'E': hasE = true; break;
+          }
+          p += 2;
+          while (*p == ' ') ++p;
+        }
+
+        if (hasE) SERIAL_ECHO_START;
+        if (hasA) SERIAL_ECHOPGM("//");
+
+        SERIAL_ECHOLN(p);
     }
     break;
 

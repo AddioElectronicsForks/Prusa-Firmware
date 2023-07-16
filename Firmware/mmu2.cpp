@@ -141,9 +141,16 @@ bool MMU2::WriteRegister(uint8_t address, uint16_t data) {
     if (!WaitForMMUReady())
         return false;
 
-    // special case - intercept requests of extra loading distance and perform the change even on the printer's side
-    if (address == 0x0b) {
+    // special cases - intercept requests of registers which influence the printer's behaviour too + perform the change even on the printer's side
+    switch (address) {
+    case 0x0b:
         logic.PlanExtraLoadDistance(data);
+        break;
+    case 0x14:
+        logic.PlanPulleySlowFeedRate(data);
+        break;
+    default:
+        break; // do not intercept any other register writes
     }
 
     do {
@@ -296,6 +303,8 @@ bool MMU2::VerifyFilamentEnteredPTFE() {
             safe_delay_keep_alive(0);
         }
     }
+
+    Disable_E0();
 
     if (fsensorState) {
         IncrementLoadFails();
@@ -877,7 +886,6 @@ void MMU2::filament_ramming() {
 
 void MMU2::execute_extruder_sequence(const E_Step *sequence, uint8_t steps) {
     planner_synchronize();
-    Enable_E0();
 
     const E_Step *step = sequence;
     for (uint8_t i = steps; i ; --i) {
@@ -929,7 +937,7 @@ void MMU2::ReportError(ErrorCode ec, ErrorSource res) {
         lastErrorSource = res;
         LogErrorEvent_P(_O(PrusaErrorTitle(PrusaErrorCodeIndex((uint16_t)ec))));
 
-        if (ec != ErrorCode::OK) {
+        if (ec != ErrorCode::OK && ec != ErrorCode::FILAMENT_EJECTED) {
             IncrementMMUFails();
 
             // check if it is a "power" failure - we consider TMC-related errors as power failures
@@ -1040,7 +1048,7 @@ void MMU2::OnMMUProgressMsgSame(ProgressCode pc) {
                 // After the MMU knows the FSENSOR is triggered it will:
                 // 1. Push the filament by additional 30mm (see fsensorToNozzle)
                 // 2. Disengage the idler and push another 2mm.
-                MoveE(logic.ExtraLoadDistance() + 2, MMU2_LOAD_TO_NOZZLE_FEED_RATE);
+                MoveE(logic.ExtraLoadDistance() + 2, logic.PulleySlowFeedRate());
                 break;
             case FilamentState::NOT_PRESENT:
                 // fsensor not triggered, continue moving extruder
@@ -1050,7 +1058,7 @@ void MMU2::OnMMUProgressMsgSame(ProgressCode pc) {
                     // than 450mm because the firmware will ignore too long extrusions
                     // for safety reasons. See PREVENT_LENGTHY_EXTRUDE.
                     // Use 350mm to be safely away from the prevention threshold
-                    MoveE(350.0f, MMU2_LOAD_TO_NOZZLE_FEED_RATE);
+                    MoveE(350.0f, logic.PulleySlowFeedRate());
                 }
                 break;
             default:
