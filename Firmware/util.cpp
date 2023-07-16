@@ -403,7 +403,6 @@ char *code_string(const char *pStr, size_t *nLength) {
     pStrEnd=strchr(pStrBegin,GCODE_DELIMITER);
     if(!pStrEnd)
         return(NULL);
-    //pStrEnd--;
     *nLength=pStrEnd-pStrBegin;
     return pStrBegin;
 }
