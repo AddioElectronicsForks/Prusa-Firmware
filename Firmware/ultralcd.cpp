@@ -4208,8 +4208,25 @@ do\
 while (0)
 
 
-//menu_fmt_float13 modified to only display 2 decimals.
-const char nozzle_diameter_fmt[] PROGMEM = "%c%-14.14S%+.2f";
+/**
+ * @brief Converts oNozzleDiameter to string.
+ * 
+ * @param str 4+1(nt) byte char array
+*/
+void nozzle_diameter_string(char* str)
+{
+	if (oNozzleDiameter >= 100){
+		itoa(oNozzleDiameter, str, 10);
+		str[3] = str[2];
+		str[2] = str[1];
+		str[4] = 0;
+		}else{
+		str[0] = '0';
+		itoa(oNozzleDiameter, str+2, 10);
+	}
+	
+	str[1] = '.';
+}
 
 /**
  * @brief Sets the nozzle diameter in increments of 50uM with the encoder.
@@ -4220,7 +4237,7 @@ static void lcd_nozzle_diameter_adjust()
 	{
 		int8_t status;
 		uint16_t nozzleDiameter_uM;
-        float nozzleDiameter;
+        char str[5];
 	} _menu_data_t;
 	static_assert(sizeof(menu_data)>= sizeof(_menu_data_t),"_menu_data_t doesn't fit into menu_data");
 	_menu_data_t* _md = (_menu_data_t*)&(menu_data[0]);
@@ -4230,11 +4247,11 @@ static void lcd_nozzle_diameter_adjust()
 		// Initialize its status.
 		_md->status = 1;
         _md->nozzleDiameter_uM = eeprom_read_word(reinterpret_cast<uint16_t *>(EEPROM_NOZZLE_DIAMETER_uM));
-
         oNozzleDiameter = _md->nozzleDiameter_uM / 10;
 
-        //Check if nozzle diameter in range
-        if (_md->nozzleDiameter_uM < NOZZLE_MIN_DIAMETER_uM || _md->nozzleDiameter_uM > NOZZLE_MAX_DIAMETER_uM)
+        //Check if nozzle diameter in range, and divisible by steps.
+        if (_md->nozzleDiameter_uM < NOZZLE_MIN_DIAMETER_uM || _md->nozzleDiameter_uM > NOZZLE_MAX_DIAMETER_uM
+        || _md->nozzleDiameter_uM % NOZZLE_DIAMETER_STEPS_uM != 0)
         {
             //Out of range, set to default and save to EEPROM.
             _md->nozzleDiameter_uM = NOZZLE_DEF_DIAMETER_uM;
@@ -4242,6 +4259,7 @@ static void lcd_nozzle_diameter_adjust()
             eeprom_update_byte((uint8_t*)EEPROM_NOZZLE_DIAMETER, (uint8_t)oNozzleDiameter);
             eeprom_update_word((uint16_t*)EEPROM_NOZZLE_DIAMETER_uM, _md->nozzleDiameter_uM);
         }
+
 		lcd_draw_update = 1;
 	}
 
@@ -4249,19 +4267,19 @@ static void lcd_nozzle_diameter_adjust()
 	{
 		_md->nozzleDiameter_uM += lcd_encoder * NOZZLE_DIAMETER_STEPS_uM;
 
-        if (_md->nozzleDiameter_uM < NOZZLE_MIN_DIAMETER_uM) _md->nozzleDiameter_uM = NOZZLE_DEF_DIAMETER_uM;
+        if (_md->nozzleDiameter_uM < NOZZLE_MIN_DIAMETER_uM) _md->nozzleDiameter_uM = NOZZLE_MAX_DIAMETER_uM;
         else if (_md->nozzleDiameter_uM > NOZZLE_MAX_DIAMETER_uM) _md->nozzleDiameter_uM = NOZZLE_MIN_DIAMETER_uM;
 
+        oNozzleDiameter = _md->nozzleDiameter_uM / 10;
 		_delay(50);
 		lcd_encoder = 0;
 		lcd_draw_update = 1;
 	}
 	if (lcd_draw_update)
 	{
-        _md->nozzleDiameter = _md->nozzleDiameter_uM / 1000.0f;
         lcd_set_cursor(0, 1);
-        //menu_draw_float13(_T(MSG_NOZZLE_DIAMETER), _md->nozzleDiameter); 
-        lcd_printf_P(nozzle_diameter_fmt, ' ', _T(MSG_NOZZLE_DIAMETER), _md->nozzleDiameter);
+        nozzle_diameter_string(_md->str);
+        lcd_printf_P(PSTR("%c%-14.14S%.4s"), ' ', _T(MSG_NOZZLE_DIAMETER), _md->str);
 	}
 	if (LCD_CLICKED || menu_leaving)
 	{
@@ -4277,17 +4295,10 @@ static void lcd_nozzle_diameter_cycle(void) {
 
     nDiameter += NOZZLE_DIAMETER_STEPS_uM;
 
-    //New printer defaults to 400
     if (nDiameter < NOZZLE_MIN_DIAMETER_uM)
-    {
         nDiameter = NOZZLE_DEF_DIAMETER_uM;
-    }
-
-    //Max size 1mm (min 0.1mm)
-    if (nDiameter > NOZZLE_MAX_DIAMETER_uM)
-    {
+    else if (nDiameter > NOZZLE_MAX_DIAMETER_uM)
         nDiameter = NOZZLE_MIN_DIAMETER_uM;
-    }
 
     oNozzleDiameter = (nDiameter / 10);
 
@@ -4298,18 +4309,8 @@ static void lcd_nozzle_diameter_cycle(void) {
 #define SETTINGS_NOZZLE \
 do\
 {\
-    char cstr[4];\
-    itoa((uint8_t)oNozzleDiameter, cstr, 10);\
-    char str[] = "0.00";\
-    if ((uint8_t)oNozzleDiameter > 100){\
-        str[0] = cstr[0];\
-        str[2] = cstr[1];\
-        str[3] = cstr[2];\
-    }else{\
-        str[2] = cstr[0];\
-        str[3] = cstr[1];\
-    }\
-    MENU_ITEM_TOGGLE(_T(MSG_NOZZLE_DIAMETER), str, lcd_nozzle_diameter_cycle);\
+    nozzle_diameter_string(_md->nozzle_diameter_string);\
+    MENU_ITEM_TOGGLE(_T(MSG_NOZZLE_DIAMETER), _md->nozzle_diameter_string, lcd_nozzle_diameter_cycle);\
 }\
 while (0)
 
@@ -4432,9 +4433,12 @@ static void nozzle_change()
 void lcd_hw_setup_menu(void)                      // can not be "static"
 {
     typedef struct
-    {// 2bytes total
+    {// 2-7bytes total
         int8_t status;
         uint8_t experimental_menu_visibility;
+        #if NOZZLE_D_MODE == NOZZLE_D_MODE_CYCLE
+        char nozzle_diameter_string[5];
+        #endif
     } _menu_data_t;
     static_assert(sizeof(menu_data)>= sizeof(_menu_data_t),"_menu_data_t doesn't fit into menu_data");
     _menu_data_t* _md = (_menu_data_t*)&(menu_data[0]);
@@ -4455,8 +4459,6 @@ void lcd_hw_setup_menu(void)                      // can not be "static"
     SETTINGS_NOZZLE;
     #elif NOZZLE_D_MODE == NOZZLE_D_MODE_ENCODER
     MENU_ITEM_SUBMENU_P(_T(MSG_NOZZLE_DIAMETER), lcd_nozzle_diameter_adjust);
-    #else
-    #error Invalid Nozzle Diameter Mode
     #endif
 
     MENU_ITEM_FUNCTION_P(_T(MSG_NOZZLE_CNG_MENU),nozzle_change);
