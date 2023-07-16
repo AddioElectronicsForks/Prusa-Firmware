@@ -413,12 +413,12 @@ void printer_smodel_check(const char *pStrPos, const char *actualPrinterSModel) 
     char gStr[12];
     size_t nLength;
 
-    memset(gStr, 0, 12);
     pResult=code_string(pStrPos,&nLength);
     if(pResult != NULL) {
 
         if(nLength > 11) nLength = 11;
         memcpy(gStr, pResult, nLength);
+        gStr[nLength] = 0;
 
         // Only compare first 6 chars on MK3|MK3S
         if(strncmp_P(gStr, PSTR("MK3"), 3) == 0) nLength = 6;    
