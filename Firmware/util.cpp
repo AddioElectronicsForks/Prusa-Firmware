@@ -393,31 +393,37 @@ void gcode_level_check(uint16_t nGcodeLevel) {
 #define GCODE_DELIMITER '"'
 
 char *code_string(const char *pStr, size_t *nLength) {
-char* pStrBegin;
-char* pStrEnd;
+    char* pStrBegin;
+    char* pStrEnd;
 
-pStrBegin=strchr(pStr,GCODE_DELIMITER);
-if(!pStrBegin)
-     return(NULL);
-pStrBegin++;
-pStrEnd=strchr(pStrBegin,GCODE_DELIMITER);
-if(!pStrEnd)
-     return(NULL);
-*nLength=pStrEnd-pStrBegin;
-return pStrBegin;
+    pStrBegin=strchr(pStr,GCODE_DELIMITER);
+    if(!pStrBegin)
+        return(NULL);
+    pStrBegin++;
+    pStrEnd=strchr(pStrBegin,GCODE_DELIMITER);
+    if(!pStrEnd)
+        return(NULL);
+    //pStrEnd--;
+    *nLength=pStrEnd-pStrBegin;
+    return pStrBegin;
 }
 
 void printer_smodel_check(const char *pStrPos, const char *actualPrinterSModel) {
-char* pResult;
-size_t nLength;
+    char* pResult;
+    char gStr[12];
+    size_t nLength;
 
-pResult=code_string(pStrPos,&nLength);
+    memset(gStr, 0, 12);
+    pResult=code_string(pStrPos,&nLength);
+    if(pResult != NULL) {
 
-if(pResult != NULL) {
-    // Only compare first 6 chars on MK3|MK3S
-    if (strncmp_P(pResult, PSTR("MK3"), 3) == 0) nLength = 6;
-    if (strncmp_P(pResult, actualPrinterSModel, nLength) == 0) return;
-}
+        if(nLength > 11) nLength = 11;
+        memcpy(gStr, pResult, nLength);
+
+        // Only compare first 6 chars on MK3|MK3S
+        if(strncmp_P(gStr, PSTR("MK3"), 3) == 0) nLength = 6;    
+        if (strncmp_P(gStr, actualPrinterSModel, nLength) == 0) return;
+    }
 
     render_M862_warnings(
         _T(MSG_GCODE_DIFF_PRINTER_CONTINUE)

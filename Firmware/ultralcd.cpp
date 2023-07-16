@@ -4212,6 +4212,7 @@ do\
 while (0)
 
 
+//menu_fmt_float13 modified to only display 2 decimals.
 const char nozzle_diameter_fmt[] PROGMEM = "%c%-14.14S%+.2f";
 
 /**
@@ -4263,8 +4264,8 @@ static void lcd_nozzle_diameter_adjust()
 	{
         _md->nozzleDiameter = _md->nozzleDiameter_uM / 1000.0f;
         lcd_set_cursor(0, 1);
-        //menu_draw_float13(_i("Adj. Nozzle D."), _md->nozzleDiameter); 
-        lcd_printf_P(nozzle_diameter_fmt, ' ', _i("Adj. Nozzle D."), _md->nozzleDiameter);
+        //menu_draw_float13(_T(MSG_NOZZLE_DIAMETER), _md->nozzleDiameter); 
+        lcd_printf_P(nozzle_diameter_fmt, ' ', _T(MSG_NOZZLE_DIAMETER), _md->nozzleDiameter);
 	}
 	if (LCD_CLICKED || menu_leaving)
 	{
