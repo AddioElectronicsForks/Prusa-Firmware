@@ -403,26 +403,26 @@ char *code_string(const char *pStr, size_t *nLength) {
     pStrEnd=strchr(pStrBegin,GCODE_DELIMITER);
     if(!pStrEnd)
         return(NULL);
+    //pStrEnd--;
     *nLength=pStrEnd-pStrBegin;
     return pStrBegin;
 }
 
 void printer_smodel_check(const char *pStrPos, const char *actualPrinterSModel) {
-    char* pResult;
-    char gStr[12];
-    size_t nLength;
+char* pResult;
+size_t nLength;
+size_t aLength;
 
-    memset(gStr, 0, 12);
-    pResult=code_string(pStrPos,&nLength);
-    if(pResult != NULL) {
+pResult=code_string(pStrPos,&nLength);
 
-        if(nLength > 11) nLength = 11;
-        memcpy(gStr, pResult, nLength);
+if(pResult != NULL) {
+    aLength=strlen_P(actualPrinterSModel);
+    if(aLength > nLength) nLength = aLength;
 
-        // Only compare first 6 chars on MK3|MK3S
-        if(strncmp_P(gStr, PSTR("MK3"), 3) == 0) nLength = 6;    
-        if (strncmp_P(gStr, actualPrinterSModel, nLength) == 0) return;
-    }
+    // Only compare first 6 chars on MK3|MK3S if string longer than 4 characters
+    if (nLength > 4 && strncmp_P(pResult, PSTR("MK3"), 3) == 0) nLength = 6;
+    if (strncmp_P(pResult, actualPrinterSModel, nLength) == 0) return;
+}
 
     render_M862_warnings(
         _T(MSG_GCODE_DIFF_PRINTER_CONTINUE)
